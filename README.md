@@ -11,5 +11,7 @@ node graphql.js
 node admin\admin.js
 
 4. Теперь панель администратора доступна на http://localhost:8080/
+
 Каталог на http://localhost:8080/
+
 GraphQL Playground на http://localhost:4000
