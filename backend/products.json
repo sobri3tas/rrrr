@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Арбуз",
+    "price": 100,
+    "description": "Ягода или фрукт?",
+    "category": [
+      "Еда"
+    ],
+    "id": 1
+  },
+  {
+    "name": "Банан",
+    "price": 30,
+    "description": "Желтый сытный фрукт",
+    "category": [
+      "Фрукты"
+    ],
+    "id": 2
+  },
+  {
+    "name": "Дмитрий Волков",
+    "price": 2,
+    "description": "rr",
+    "category": [
+      "Животные"
+    ],
+    "id": 3
+  }
+]

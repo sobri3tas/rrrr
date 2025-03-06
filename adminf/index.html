@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель администратора</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<style>
+
+    h1, h2 {
+        color: #333;
+    }
+
+    form {
+        margin-bottom: 20px;
+    }
+
+    input, textarea, button {
+        display: block;
+        margin-bottom: 10px;
+        padding: 8px;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    button {
+        color: rgb(0, 0, 0);
+        border: none;
+        cursor: pointer;
+    }
+
+    .product-item {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+</style>
+<body>
+
+<!-- Форма для добавления товара -->
+<h2>Добавить товар</h2>
+<form id="addProductForm">
+    <input type="text" id="name" placeholder="Название" required>
+    <input type="number" id="price" placeholder="Цена" required>
+    <textarea id="description" placeholder="Описание" required></textarea>
+    <input type="text" id="category" placeholder="Категория (через запятую)" required>
+    <button type="submit">Добавить</button>
+</form>
+
+<!-- Форма для редактирования товара -->
+<h2>Редактировать товар</h2>
+<form id="editProductForm">
+    <input type="number" id="editId" placeholder="ID товара" required>
+    <input type="text" id="editName" placeholder="Название">
+    <input type="number" id="editPrice" placeholder="Цена">
+    <textarea id="editDescription" placeholder="Описание"></textarea>
+    <input type="text" id="editCategory" placeholder="Категория (через запятую)">
+    <button type="submit">Редактировать</button>
+</form>
+
+<!-- Форма для удаления товара -->
+<h2>Удалить товар</h2>
+<form id="deleteProductForm">
+    <input type="number" id="deleteId" placeholder="ID товара" required>
+    <button type="submit">Удалить</button>
+</form>
+
+<!-- Список товаров -->
+<h2>Список товаров</h2>
+<div id="productList"></div>
+
+<div id="chat" style="position: fixed; bottom: 0; right: 0; width: 300px; background: #f0f0f0; padding: 10px;">
+    <div id="messages" style="height: 200px; overflow-y: auto;"></div>
+    <input id="messageInput" type="text" placeholder="Введите сообщение" />
+    <button onclick="sendMessage()">Отправить</button>
+  </div>
+  
+  <script>
+    const ws = new WebSocket('ws://localhost:8081');
+  
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'message') {
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML += `<p>${data.data.sender}: ${data.data.text}</p>`;
+      } else if (data.type === 'history') {
+        data.data.forEach((msg) => {
+          const messagesDiv = document.getElementById('messages');
+          messagesDiv.innerHTML += `<p>${msg.sender}: ${msg.text}</p>`;
+        });
+      }
+    };
+  
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = {
+        sender: 'Администратор',
+        text: input.value,
+        time: new Date().toLocaleTimeString(),
+      };
+      ws.send(JSON.stringify(message));
+      input.value = '';
+    }
+  </script>
+
+<script>
+    // Функция для загрузки списка товаров
+    function loadProducts() {
+        fetch('http://localhost:8080/products')
+            .then(response => response.json())
+            .then(data => {
+                const productList = document.getElementById('productList');
+                productList.innerHTML = '';
+                data.forEach(product => {
+                    const productItem = document.createElement('div');
+                    productItem.className = 'product-item';
+                    productItem.innerHTML = `
+                            <p><strong>ID:</strong> ${product.id}</p>
+                            <p><strong>Название:</strong> ${product.name}</p>
+                            <p><strong>Цена:</strong> $${product.price}</p>
+                            <p><strong>Описание:</strong> ${product.description}</p>
+                            <p><strong>Категория:</strong> ${product.category.join(', ')}</p>
+                            <hr>
+                        `;
+                    productList.appendChild(productItem);
+                });
+            });
+    }
+
+    // Добавление товара
+    document.getElementById('addProductForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const newProduct = {
+            name: document.getElementById('name').value,
+            price: parseFloat(document.getElementById('price').value),
+            description: document.getElementById('description').value,
+            category: document.getElementById('category').value.split(',').map(item => item.trim())
+        };
+
+        fetch('http://localhost:8080/products', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newProduct)
+        })
+            .then(response => response.json())
+            .then(() => {
+                loadProducts();
+            });
+    });
+
+    // Редактирование товара
+    document.getElementById('editProductForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const productId = document.getElementById('editId').value;
+        const updatedProduct = {
+            name: document.getElementById('editName').value,
+            price: parseFloat(document.getElementById('editPrice').value),
+            description: document.getElementById('editDescription').value,
+            category: document.getElementById('editCategory').value.split(',').map(item => item.trim())
+        };
+
+        fetch(`http://localhost:8080/products/${productId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedProduct)
+        })
+            .then(response => response.json())
+            .then(() => {
+                loadProducts();
+            });
+    });
+
+    // Удаление товара
+    document.getElementById('deleteProductForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const productId = document.getElementById('deleteId').value;
+
+        fetch(`http://localhost:8080/products/${productId}`, {
+            method: 'DELETE'
+        })
+            .then(() => {
+                loadProducts();
+            });
+    });
+
+    // Загружаем товары при загрузке страницы
+    loadProducts();
+</script>
+</body>
+
+</html>
